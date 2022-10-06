@@ -409,13 +409,26 @@ data</a>
 estimation</a></li>
 <li><a href="#cvm-test-for-constant-persistence-coefficient"><span class="toc-section-number">2.4</span> CvM test for constant persistence
 coefficient</a></li>
+<li><a href="#forecasting"><span class="toc-section-number">2.5</span>
+Forecasting</a>
+<ul>
+<li><a href="#preparation-backtesting-function"><span class="toc-section-number">2.5.1</span> Preparation: Backtesting
+function</a></li>
+<li><a href="#time-range-1-2015070120211230-qr"><span class="toc-section-number">2.5.2</span> Time range 1:
+2015/07/01–2021/12/30 (QR)</a></li>
+<li><a href="#time-range-2-2000022320211230-qr"><span class="toc-section-number">2.5.3</span> Time range 2:
+2000/02/23–2021/12/30 (QR)</a></li>
+<li><a href="#time-range-2-2000022320211230-cqr"><span class="toc-section-number">2.5.4</span> Time range 2:
+2000/02/23–2021/12/30 (CQR)</a></li>
+</ul></li>
 </ul></li>
 </ul>
 </div>
 
 <div id="preparation" class="section level1" number="1">
 <h1><span class="header-section-number">1</span> Preparation</h1>
-<pre class="r"><code>rm(list = ls())
+<pre class="r"><code>set.seed(1234)
+rm(list = ls())
 
 # load the &#39;QGARCH&#39; R-package. This package includes all the necessary functions in the empirical example of the manuscript
 # If the R package are not installed on your computer, please use the following function to install it from the local file
@@ -488,9 +501,9 @@ for estimates of coefficient functions:</p>
 <ol style="list-style-type: decimal">
 <li><p>Calculate the parameter estimates and ASDs of the fitted
 QGARCH(1,1) model at each quantile level.</p></li>
-<li><p>For comparison, fit a linear GARCH(1,1) model (2.4) with <span class="math inline">\(x_t=y_t\)</span> using Gaussian QMLE and estimate
-<span class="math inline">\(Q_\tau(\varepsilon_t)\)</span> using
-empirical quantile of <span class="math inline">\(\{\hat{\varepsilon}_t\}\)</span>. Then <span class="math inline">\(\left(\frac{a_0}{1-b_1}Q_\tau(\varepsilon_t),a_1Q_\tau(\varepsilon_t),b_1\right)\)</span>
+<li><p>For comparison, fit a linear GARCH(1,1) model (2.4) using
+Gaussian QMLE and estimate <span class="math inline">\(Q_\tau(\varepsilon_t)\)</span> using empirical
+quantile of <span class="math inline">\(\{\hat{\varepsilon}_t\}\)</span>. Then <span class="math inline">\(\left(\frac{a_0}{1-b_1}Q_\tau(\varepsilon_t),a_1Q_\tau(\varepsilon_t),b_1\right)\)</span>
 can be estimated at each quantile level.</p></li>
 <li><p>Plot the estimated coefficient functions based on the QGARCH(1,1)
 model and linear GARCH(1,1) model (2.4).</p></li>
@@ -560,7 +573,7 @@ fit_ARCHinfty &lt;- function(Y,fixTau){
 }</code></pre>
 <pre class="r"><code>fixTau &lt;- 141:199/200 # multiple quantile levels
 
-# Calculate the estimates of linear GARCH(1,1) model (2.4) with x_t=y_t using Gaussian QMLE and Q_tau(varepsilon_t) using empirical quantile of {hat{varepsilon}_t} at each quantile levels.
+# Calculate the estimates of linear GARCH(1,1) model (2.4) using Gaussian QMLE and Q_tau(varepsilon_t) using empirical quantile of {hat{varepsilon}_t} at each quantile levels.
 fit_ARCHinfty &lt;- fit_ARCHinfty(Y = Y,fixTau = fixTau)
 parm_ARCHinfty &lt;- array(dim = c(length(fixTau),3))
 for(tau_index in 1:length(fixTau)){
@@ -654,120 +667,175 @@ for(tau_index in 1:length(testTau2)){
 subsampling_cons_test &lt;- const_test(Y,w,testTau2,parm_multi,Omega_1_multi) # CvM test
 subsampling_cons_test[[&#39;information&#39;]]</code></pre>
 <pre><code>[1] &quot;The value of CvM test statistic is 0.933;The p value is 0.047.&quot;</code></pre>
-<!-- ## Forecasting -->
-<!-- ### Preparation: Backtesting function -->
-<!-- ```{r} -->
-<!-- VaRbacktestB <- function(Hit,VaR,tau,p,Y_true){ -->
-<!--   # Define a VaR backtest function -->
-<!--   # ============================================================ -->
-<!--   # Hit is a sequence of Hit_t=I(y_t<-VaR_t) -->
-<!--   # VaR is a sequence of Value-at-Risk -->
-<!--   # tau is the quantile level of -VaR=Q_tau(y_t|F_{t-1}) -->
-<!--   # p is the dimension of lagged hits in DQ tests -->
-<!--   # ============================================================ -->
-<!--   n <- length(Hit) # sample size -->
-<!--   ### Unconditional coverage test -->
-<!--   n1 <- sum(Hit); tauhat <- n1/n -->
-<!--   LR_UC <- -2*log((tau/tauhat)^n1*((1-tau)/(1-tauhat))^(n-n1)) -->
-<!--   P.UC <- pchisq(LR_UC,df=1,lower.tail=FALSE) # p-value -->
-<!--   ### Independence test -->
-<!--   ContTable <- table(Hit[-n],Hit[-1]) -->
-<!--   if(any(dim(ContTable)!=c(2,2))){LR_Ind=NA;P.Ind = NA}else{ -->
-<!--     n00 <- ContTable[1,1]; n01 <- ContTable[1,2]; n10 <- ContTable[2,1]; n11 <- ContTable[2,2] -->
-<!--     tau_null <- (n01+n11)/(n00+n01+n10+n11) -->
-<!--     tau0_alt <- n01/(n00+n01); tau1_alt <- n11/(n10+n11) -->
-<!--     LR_Ind <- -2*log((tau_null/tau0_alt)^n01*(tau_null/tau1_alt)^n11*((1-tau_null)/(1-tau0_alt))^n00*((1-tau_null)/(1-tau1_alt))^n10) -->
-<!--     P.Ind <- pchisq(LR_Ind,df=1,lower.tail=FALSE) # p-value -->
-<!--   } -->
-<!--   ### Conditional coverage test -->
-<!--   if(any(dim(ContTable)!=c(2,2))){ -->
-<!--     LR_CC <- NaN -->
-<!--     P.CC <- NaN -->
-<!--   }else{ -->
-<!--     LR_CC <- LR_UC+LR_Ind -->
-<!--     P.CC <- pchisq(LR_CC,df=2,lower.tail=FALSE) # p-value -->
-<!--   } -->
-<!--   ### DQ test: hits & lagged VaR -->
-<!--   X <- cbind(1,embed(Hit[-n],p)) # (n-p)*(p+1) matrix -->
-<!--   if(all(dim(ContTable)==c(2,2))){ -->
-<!--     if(all(Hit==0)|all(Hit==1)){ -->
-<!--       P.DQ <- NaN -->
-<!--     }else{ -->
-<!--       if (is.na(det(t(X)%*%X))|det(t(X)%*%X)<=10^{-5}){P.DQ <- NaN -->
-<!--       } else { -->
-<!--         DQ <- t(Hit[(p+1):n]-tau)%*%X%*%solve(t(X)%*%X)%*%t(X)%*%(Hit[(p+1):n]-tau)/tau/(1-tau) -->
-<!--         P.DQ <- pchisq(DQ,df=p+1,lower.tail=FALSE) # p-value -->
-<!--       } -->
-<!--     } -->
-<!--   }else{ -->
-<!--     P.DQ <- NaN -->
-<!--   } -->
-<!--   ECR <- mean(Hit)*100 -->
-<!--   PE <- sqrt(n)*abs(mean(Hit)-tau)/sqrt(tau*(1-tau)) -->
-<!--   Loss <- mean(check_function(x = (Y_true-(-VaR)),tau = tau)) -->
-<!--   ########################################################################### -->
-<!--   rbind.data.frame(ECR=ECR,PE=PE,Loss=Loss,UC=P.UC,Ind=P.Ind,CC=P.CC,DQ_comb=P.DQ)  # deparse.level=0 -->
-<!-- } -->
-<!-- ``` -->
-<!-- ### Time range 1: 2015/07/01--2021/12/30 (QR) -->
-<!-- ```{r message=FALSE, warning=FALSE} -->
-<!-- N_window <- 1000 # size of the rolling window -->
-<!-- N_predict <- length(Y)-N_window # the rest of the data belongs to prediction set -->
-<!-- fixTau <- c(0.01,0.025,0.05,0.95,0.975,0.99) # multiple quantile levels -->
-<!-- fore_QR <- VaR_forecasting_QR(data = Y,N_train = N_window,fixTau = fixTau) # rolling forecasting based on QR -->
-<!-- # Summary the forecasting results -->
-<!-- report <- matrix(NA,nrow = 4,ncol = length(fixTau)) # summary table -->
-<!-- real <- Y[(N_window+1):(N_window+N_predict)] # true data -->
-<!-- for(tau_index in 1:length(fixTau)){ -->
-<!--   VaR <- -fore_QR[,tau_index] -->
-<!--   Hit <- real<fore_QR[,tau_index] -->
-<!--   report[,tau_index] <- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c("ECR","PE","CC","DQ_comb"),]) -->
-<!-- } -->
-<!-- report <- data.frame(round(report,2)) -->
-<!-- colnames(report) <- as.character(fixTau) -->
-<!-- rownames(report) <- c("ECR","PE","CC","DQ_comb") -->
-<!-- report -->
-<!-- ``` -->
-<!-- ### Time range 2: 2000/02/23--2021/12/30 (QR) -->
-<!-- ```{r} -->
-<!-- # Enlarge the out-of-sample set with size 4500 -->
-<!-- Y <- tail(diff(log(data_ana[,"close"]))*100,5500) # log-return (%) -->
-<!-- beg_time <- head(tail(data_ana[-1,"date"],5500),1);beg_time # begin time -->
-<!-- N_window <- 1000 # size of the rolling window -->
-<!-- N_val <- 500 # size of the length of validation set -->
-<!-- N_predict <- length(Y)-N_window-N_val # the rest of the data belongs of prediction set -->
-<!-- fixTau <- c(0.001,0.0025,0.005,0.995,0.9975,0.999) -->
-<!-- H <- 1:10/100 -->
-<!-- fore_QR <- VaR_forecasting_QR(data = Y,N_train = N_window,fixTau = fixTau) # rolling forecasting based on QR -->
-<!-- # Summary the forecasting results -->
-<!-- report <- matrix(NA,nrow = 2,ncol = length(fixTau)) -->
-<!-- real <- Y[(N_window+N_val+1):(N_window+N_val+N_predict)] -->
-<!-- for(tau_index in 1:length(fixTau)){ -->
-<!--   VaR <- -fore_QR[(N_val+1):(N_val+N_predict),tau_index] -->
-<!--   Hit <- real<fore_QR[(N_val+1):(N_val+N_predict),tau_index] -->
-<!--   report[,tau_index] <- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c("ECR","PE"),]) -->
-<!-- } -->
-<!-- report <- data.frame(round(report,2)) -->
-<!-- colnames(report) <- as.character(fixTau) -->
-<!-- rownames(report) <- c("ECR","PE") -->
-<!-- report -->
-<!-- ``` -->
-<!-- ### Time range 2: 2000/02/23--2021/12/30 (CQR) -->
-<!-- ```{r} -->
-<!-- fore_CQR <- VaR_forecasting_CQR(data = Y,N_train = N_window,N_val = N_val,H = H,fixTau = fixTau) #  rolling forecasting based on CQR -->
-<!-- # Summary the forecasting results -->
-<!-- report <- matrix(NA,nrow = 2,ncol = length(fixTau)) -->
-<!-- real <- Y[(N_window+N_val+1):(N_window+N_val+N_predict)] -->
-<!-- for(tau_index in 1:length(fixTau)){ -->
-<!--   VaR <- -fore_CQR[,tau_index] -->
-<!--   Hit <- real<fore_CQR[,tau_index] -->
-<!--   report[,tau_index] <- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c("ECR","PE"),]) -->
-<!-- } -->
-<!-- report <- data.frame(round(report,2)) -->
-<!-- colnames(report) <- as.character(fixTau) -->
-<!-- rownames(report) <- c("ECR","PE") -->
-<!-- report -->
-<!-- ``` -->
+</div>
+<div id="forecasting" class="section level2" number="2.5">
+<h2><span class="header-section-number">2.5</span> Forecasting</h2>
+<div id="preparation-backtesting-function" class="section level3" number="2.5.1">
+<h3><span class="header-section-number">2.5.1</span> Preparation:
+Backtesting function</h3>
+<pre class="r"><code>VaRbacktestB &lt;- function(Hit,VaR,tau,p,Y_true){
+  # Define a VaR backtest function
+  # ============================================================
+  # Hit is a sequence of Hit_t=I(y_t&lt;-VaR_t)
+  # VaR is a sequence of Value-at-Risk
+  # tau is the quantile level of -VaR=Q_tau(y_t|F_{t-1})
+  # p is the dimension of lagged hits in DQ tests
+  # ============================================================
+  n &lt;- length(Hit) # sample size
+  ### Unconditional coverage test
+  n1 &lt;- sum(Hit); tauhat &lt;- n1/n
+  LR_UC &lt;- -2*log((tau/tauhat)^n1*((1-tau)/(1-tauhat))^(n-n1))
+  P.UC &lt;- pchisq(LR_UC,df=1,lower.tail=FALSE) # p-value
+  ### Independence test
+  ContTable &lt;- table(Hit[-n],Hit[-1])
+  if(any(dim(ContTable)!=c(2,2))){LR_Ind=NA;P.Ind = NA}else{
+    n00 &lt;- ContTable[1,1]; n01 &lt;- ContTable[1,2]; n10 &lt;- ContTable[2,1]; n11 &lt;- ContTable[2,2]
+    tau_null &lt;- (n01+n11)/(n00+n01+n10+n11)
+    tau0_alt &lt;- n01/(n00+n01); tau1_alt &lt;- n11/(n10+n11)
+    LR_Ind &lt;- -2*log((tau_null/tau0_alt)^n01*(tau_null/tau1_alt)^n11*((1-tau_null)/(1-tau0_alt))^n00*((1-tau_null)/(1-tau1_alt))^n10)
+    P.Ind &lt;- pchisq(LR_Ind,df=1,lower.tail=FALSE) # p-value
+  }
+
+  ### Conditional coverage test
+  if(any(dim(ContTable)!=c(2,2))){
+    LR_CC &lt;- NaN
+    P.CC &lt;- NaN
+  }else{
+    LR_CC &lt;- LR_UC+LR_Ind
+    P.CC &lt;- pchisq(LR_CC,df=2,lower.tail=FALSE) # p-value
+  }
+  ### DQ test: hits
+  X &lt;- cbind(1,embed(Hit[-n],p)) # (n-p)*(p+1) matrix
+  if (det(t(X)%*%X)&lt;=10^{-5}){P.DQ &lt;- NaN
+  } else {
+    DQ &lt;- t(Hit[(p+1):n]-tau)%*%X%*%solve(t(X)%*%X)%*%t(X)%*%(Hit[(p+1):n]-tau)/tau/(1-tau)
+    P.DQ &lt;- pchisq(DQ,df=p+1,lower.tail=FALSE) # p-value
+  }
+  
+  ECR &lt;- mean(Hit)*100
+  PE &lt;- sqrt(n)*abs(mean(Hit)-tau)/sqrt(tau*(1-tau))
+  Loss &lt;- mean(check_function(x = (Y_true-(-VaR)),tau = tau))
+  ###########################################################################
+  rbind.data.frame(ECR=ECR,PE=PE,Loss=Loss,UC=P.UC,Ind=P.Ind,CC=P.CC,DQ=P.DQ)  # deparse.level=0
+}</code></pre>
+</div>
+<div id="time-range-1-2015070120211230-qr" class="section level3" number="2.5.2">
+<h3><span class="header-section-number">2.5.2</span> Time range 1:
+2015/07/01–2021/12/30 (QR)</h3>
+<pre class="r"><code>N_window &lt;- 1000 # size of the rolling window
+N_predict &lt;- length(Y)-N_window # the rest of the data belongs to prediction set
+fixTau &lt;- c(0.01,0.025,0.05,0.95,0.975,0.99) # multiple quantile levels
+
+fore_QR &lt;- VaR_forecasting_QR(data = Y,N_train = N_window,fixTau = fixTau) # rolling forecasting based on QR
+
+# Summarize the forecasting results
+report &lt;- matrix(NA,nrow = 4,ncol = length(fixTau)) # summary table
+real &lt;- Y[(N_window+1):(N_window+N_predict)] # true data
+for(tau_index in 1:length(fixTau)){
+  VaR &lt;- -fore_QR[,tau_index]
+  Hit &lt;- real&lt;fore_QR[,tau_index]
+  report[,tau_index] &lt;- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c(&quot;ECR&quot;,&quot;PE&quot;,&quot;CC&quot;,&quot;DQ&quot;),])
+}
+report &lt;- data.frame(round(report,2))
+colnames(report) &lt;- as.character(fixTau)
+rownames(report) &lt;- c(&quot;ECR&quot;,&quot;PE&quot;,&quot;CC&quot;,&quot;DQ&quot;)
+report</code></pre>
+<pre><code>    0.01 0.025 0.05  0.95 0.975  0.99
+ECR 1.26  2.98 6.12 94.51 97.65 99.06
+PE  0.65  0.78 1.30  0.57  0.23  0.15
+CC  0.74  0.42 0.42  0.11  0.68  0.93
+DQ  0.96  0.75 0.01  0.62  0.68  1.00</code></pre>
+<pre class="r"><code># ===========================================================
+# Rearrangement
+fore_QR_rearrange &lt;- t(apply(fore_QR,1,sort))
+# Summarize the forecasting results
+report &lt;- matrix(NA,nrow = 4,ncol = length(fixTau)) # summary table
+real &lt;- Y[(N_window+1):(N_window+N_predict)] # true data
+for(tau_index in 1:length(fixTau)){
+  VaR &lt;- -fore_QR_rearrange[,tau_index]
+  Hit &lt;- real&lt;fore_QR_rearrange[,tau_index]
+  report[,tau_index] &lt;- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c(&quot;ECR&quot;,&quot;PE&quot;,&quot;CC&quot;,&quot;DQ&quot;),])
+}
+report &lt;- data.frame(round(report,2))
+colnames(report) &lt;- as.character(fixTau)
+rownames(report) &lt;- c(&quot;ECR&quot;,&quot;PE&quot;,&quot;CC&quot;,&quot;DQ&quot;)
+report</code></pre>
+<pre><code>    0.01 0.025 0.05  0.95 0.975  0.99
+ECR 1.26  2.98 6.12 94.51 97.65 99.06
+PE  0.65  0.78 1.30  0.57  0.23  0.15
+CC  0.74  0.42 0.42  0.11  0.68  0.93
+DQ  0.96  0.75 0.01  0.62  0.68  1.00</code></pre>
+</div>
+<div id="time-range-2-2000022320211230-qr" class="section level3" number="2.5.3">
+<h3><span class="header-section-number">2.5.3</span> Time range 2:
+2000/02/23–2021/12/30 (QR)</h3>
+<pre class="r"><code># Enlarge the out-of-sample set with size 4500
+Y &lt;- tail(diff(log(data_ana[,&quot;close&quot;]))*100,5500) # log-return (%)
+beg_time &lt;- head(tail(data_ana[-1,&quot;date&quot;],5500),1);beg_time # begin time</code></pre>
+<pre><code>[1] &quot;2000-02-23&quot;</code></pre>
+<pre class="r"><code>N_window &lt;- 1000 # size of the rolling window
+N_val &lt;- 500 # size of the length of validation set
+N_predict &lt;- length(Y)-N_window-N_val # the rest of the data belongs to prediction set
+fixTau &lt;- c(0.001,0.0025,0.005,0.995,0.9975,0.999)
+H &lt;- 1:10/100
+
+fore_QR &lt;- VaR_forecasting_QR(data = Y,N_train = N_window,fixTau = fixTau) # rolling forecasting based on QR
+
+# Summarize the forecasting results
+report &lt;- matrix(NA,nrow = 2,ncol = length(fixTau))
+real &lt;- Y[(N_window+N_val+1):(N_window+N_val+N_predict)]
+for(tau_index in 1:length(fixTau)){
+  VaR &lt;- -fore_QR[(N_val+1):(N_val+N_predict),tau_index]
+  Hit &lt;- real&lt;fore_QR[(N_val+1):(N_val+N_predict),tau_index]
+  report[,tau_index] &lt;- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c(&quot;ECR&quot;,&quot;PE&quot;),])
+}
+report &lt;- data.frame(round(report,2))
+colnames(report) &lt;- as.character(fixTau)
+rownames(report) &lt;- c(&quot;ECR&quot;,&quot;PE&quot;)
+report</code></pre>
+<pre><code>    0.001 0.0025 0.005 0.995 0.9975 0.999
+ECR  0.27   0.55  0.90 99.42   99.6 99.78
+PE   3.50   3.80  3.59  0.67    1.9  2.50</code></pre>
+<pre class="r"><code># ===========================================================
+# Rearrangement
+fore_QR_rearrange &lt;- t(apply(fore_QR,1,sort))
+# Summarize the forecasting results
+report &lt;- matrix(NA,nrow = 2,ncol = length(fixTau)) # summary table
+real &lt;- Y[(N_window+N_val+1):(N_window+N_val+N_predict)] # true data
+for(tau_index in 1:length(fixTau)){
+  VaR &lt;- -fore_QR_rearrange[(N_val+1):(N_val+N_predict),tau_index]
+  Hit &lt;- real&lt;fore_QR_rearrange[(N_val+1):(N_val+N_predict),tau_index]
+  report[,tau_index] &lt;- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c(&quot;ECR&quot;,&quot;PE&quot;),])
+}
+report &lt;- data.frame(round(report,2))
+colnames(report) &lt;- as.character(fixTau)
+rownames(report) &lt;- c(&quot;ECR&quot;,&quot;PE&quot;)
+report</code></pre>
+<pre><code>    0.001 0.0025 0.005 0.995 0.9975 0.999
+ECR  0.22   0.52  0.98 99.42  99.58  99.8
+PE   2.50   3.48  4.26  0.67   2.22   2.0</code></pre>
+</div>
+<div id="time-range-2-2000022320211230-cqr" class="section level3" number="2.5.4">
+<h3><span class="header-section-number">2.5.4</span> Time range 2:
+2000/02/23–2021/12/30 (CQR)</h3>
+<pre class="r"><code>fore_CQR &lt;- VaR_forecasting_CQR(data = Y,N_train = N_window,N_val = N_val,H = H,fixTau = fixTau) #  rolling forecasting based on CQR
+
+# Summarize the forecasting results
+report &lt;- matrix(NA,nrow = 2,ncol = length(fixTau))
+real &lt;- Y[(N_window+N_val+1):(N_window+N_val+N_predict)]
+for(tau_index in 1:length(fixTau)){
+  VaR &lt;- -fore_CQR[,tau_index]
+  Hit &lt;- real&lt;fore_CQR[,tau_index]
+  report[,tau_index] &lt;- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c(&quot;ECR&quot;,&quot;PE&quot;),])
+}
+report &lt;- data.frame(round(report,2))
+colnames(report) &lt;- as.character(fixTau)
+rownames(report) &lt;- c(&quot;ECR&quot;,&quot;PE&quot;)
+report</code></pre>
+<pre><code>    0.001 0.0025 0.005 0.995 0.9975 0.999
+ECR  0.15   0.35  0.75 99.48  99.70 99.85
+PE   1.00   1.27  2.24  0.22   0.63  1.00</code></pre>
+</div>
 </div>
 </div>
 

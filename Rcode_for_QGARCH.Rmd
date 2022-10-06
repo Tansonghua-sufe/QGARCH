@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE,comment='',cache = F)
 # Preparation
 
 ```{r message=FALSE, warning=FALSE}
+set.seed(1234)
 rm(list = ls())
 
 # load the 'QGARCH' R-package. This package includes all the necessary functions in the empirical example of the manuscript
@@ -87,7 +88,7 @@ In this subsection, we use the following procedure to plot a figure for estimate
 
 1. Calculate the parameter estimates and ASDs of the fitted QGARCH(1,1) model at each quantile level. 
 
-2. For comparison, fit a linear GARCH(1,1) model (2.4) with $x_t=y_t$ using Gaussian QMLE and estimate $Q_\tau(\varepsilon_t)$ using empirical quantile of $\{\hat{\varepsilon}_t\}$. Then $\left(\frac{a_0}{1-b_1}Q_\tau(\varepsilon_t),a_1Q_\tau(\varepsilon_t),b_1\right)$ can  be estimated at each quantile level.
+2. For comparison, fit a linear GARCH(1,1) model (2.4) using Gaussian QMLE and estimate $Q_\tau(\varepsilon_t)$ using empirical quantile of $\{\hat{\varepsilon}_t\}$. Then $\left(\frac{a_0}{1-b_1}Q_\tau(\varepsilon_t),a_1Q_\tau(\varepsilon_t),b_1\right)$ can  be estimated at each quantile level.
 
 3. Plot the estimated coefficient functions based on the QGARCH(1,1) model and linear GARCH(1,1) model (2.4).
 
@@ -162,7 +163,7 @@ fit_ARCHinfty <- function(Y,fixTau){
 ```{r message=FALSE, warning=FALSE}
 fixTau <- 141:199/200 # multiple quantile levels
 
-# Calculate the estimates of linear GARCH(1,1) model (2.4) with x_t=y_t using Gaussian QMLE and Q_tau(varepsilon_t) using empirical quantile of {hat{varepsilon}_t} at each quantile levels.
+# Calculate the estimates of linear GARCH(1,1) model (2.4) using Gaussian QMLE and Q_tau(varepsilon_t) using empirical quantile of {hat{varepsilon}_t} at each quantile levels.
 fit_ARCHinfty <- fit_ARCHinfty(Y = Y,fixTau = fixTau)
 parm_ARCHinfty <- array(dim = c(length(fixTau),3))
 for(tau_index in 1:length(fixTau)){
@@ -300,27 +301,19 @@ VaRbacktestB <- function(Hit,VaR,tau,p,Y_true){
     LR_CC <- LR_UC+LR_Ind
     P.CC <- pchisq(LR_CC,df=2,lower.tail=FALSE) # p-value
   }
-  ### DQ test: hits & lagged VaR
+  ### DQ test: hits
   X <- cbind(1,embed(Hit[-n],p)) # (n-p)*(p+1) matrix
-  if(all(dim(ContTable)==c(2,2))){
-    if(all(Hit==0)|all(Hit==1)){
-      P.DQ <- NaN
-    }else{
-      if (is.na(det(t(X)%*%X))|det(t(X)%*%X)<=10^{-5}){P.DQ <- NaN
-      } else {
-        DQ <- t(Hit[(p+1):n]-tau)%*%X%*%solve(t(X)%*%X)%*%t(X)%*%(Hit[(p+1):n]-tau)/tau/(1-tau)
-        P.DQ <- pchisq(DQ,df=p+1,lower.tail=FALSE) # p-value
-      }
-    }
-  }else{
-    P.DQ <- NaN
+  if (det(t(X)%*%X)<=10^{-5}){P.DQ <- NaN
+  } else {
+    DQ <- t(Hit[(p+1):n]-tau)%*%X%*%solve(t(X)%*%X)%*%t(X)%*%(Hit[(p+1):n]-tau)/tau/(1-tau)
+    P.DQ <- pchisq(DQ,df=p+1,lower.tail=FALSE) # p-value
   }
-
+  
   ECR <- mean(Hit)*100
   PE <- sqrt(n)*abs(mean(Hit)-tau)/sqrt(tau*(1-tau))
   Loss <- mean(check_function(x = (Y_true-(-VaR)),tau = tau))
   ###########################################################################
-  rbind.data.frame(ECR=ECR,PE=PE,Loss=Loss,UC=P.UC,Ind=P.Ind,CC=P.CC,DQ_comb=P.DQ)  # deparse.level=0
+  rbind.data.frame(ECR=ECR,PE=PE,Loss=Loss,UC=P.UC,Ind=P.Ind,CC=P.CC,DQ=P.DQ)  # deparse.level=0
 }
 ```
 
@@ -334,17 +327,33 @@ fixTau <- c(0.01,0.025,0.05,0.95,0.975,0.99) # multiple quantile levels
 
 fore_QR <- VaR_forecasting_QR(data = Y,N_train = N_window,fixTau = fixTau) # rolling forecasting based on QR
 
-# Summary the forecasting results
+# Summarize the forecasting results
 report <- matrix(NA,nrow = 4,ncol = length(fixTau)) # summary table
 real <- Y[(N_window+1):(N_window+N_predict)] # true data
 for(tau_index in 1:length(fixTau)){
   VaR <- -fore_QR[,tau_index]
   Hit <- real<fore_QR[,tau_index]
-  report[,tau_index] <- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c("ECR","PE","CC","DQ_comb"),])
+  report[,tau_index] <- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c("ECR","PE","CC","DQ"),])
 }
 report <- data.frame(round(report,2))
 colnames(report) <- as.character(fixTau)
-rownames(report) <- c("ECR","PE","CC","DQ_comb")
+rownames(report) <- c("ECR","PE","CC","DQ")
+report
+
+# ===========================================================
+# Rearrangement
+fore_QR_rearrange <- t(apply(fore_QR,1,sort))
+# Summarize the forecasting results
+report <- matrix(NA,nrow = 4,ncol = length(fixTau)) # summary table
+real <- Y[(N_window+1):(N_window+N_predict)] # true data
+for(tau_index in 1:length(fixTau)){
+  VaR <- -fore_QR_rearrange[,tau_index]
+  Hit <- real<fore_QR_rearrange[,tau_index]
+  report[,tau_index] <- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c("ECR","PE","CC","DQ"),])
+}
+report <- data.frame(round(report,2))
+colnames(report) <- as.character(fixTau)
+rownames(report) <- c("ECR","PE","CC","DQ")
 report
 ```
 
@@ -357,18 +366,34 @@ beg_time <- head(tail(data_ana[-1,"date"],5500),1);beg_time # begin time
 
 N_window <- 1000 # size of the rolling window
 N_val <- 500 # size of the length of validation set
-N_predict <- length(Y)-N_window-N_val # the rest of the data belongs of prediction set
+N_predict <- length(Y)-N_window-N_val # the rest of the data belongs to prediction set
 fixTau <- c(0.001,0.0025,0.005,0.995,0.9975,0.999)
 H <- 1:10/100
 
 fore_QR <- VaR_forecasting_QR(data = Y,N_train = N_window,fixTau = fixTau) # rolling forecasting based on QR
 
-# Summary the forecasting results
+# Summarize the forecasting results
 report <- matrix(NA,nrow = 2,ncol = length(fixTau))
 real <- Y[(N_window+N_val+1):(N_window+N_val+N_predict)]
 for(tau_index in 1:length(fixTau)){
   VaR <- -fore_QR[(N_val+1):(N_val+N_predict),tau_index]
   Hit <- real<fore_QR[(N_val+1):(N_val+N_predict),tau_index]
+  report[,tau_index] <- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c("ECR","PE"),])
+}
+report <- data.frame(round(report,2))
+colnames(report) <- as.character(fixTau)
+rownames(report) <- c("ECR","PE")
+report
+
+# ===========================================================
+# Rearrangement
+fore_QR_rearrange <- t(apply(fore_QR,1,sort))
+# Summarize the forecasting results
+report <- matrix(NA,nrow = 2,ncol = length(fixTau)) # summary table
+real <- Y[(N_window+N_val+1):(N_window+N_val+N_predict)] # true data
+for(tau_index in 1:length(fixTau)){
+  VaR <- -fore_QR_rearrange[(N_val+1):(N_val+N_predict),tau_index]
+  Hit <- real<fore_QR_rearrange[(N_val+1):(N_val+N_predict),tau_index]
   report[,tau_index] <- t(VaRbacktestB(Hit = Hit,VaR = VaR,tau = fixTau[tau_index],p = 4,Y_true = real)[c("ECR","PE"),])
 }
 report <- data.frame(round(report,2))
@@ -382,7 +407,7 @@ report
 ```{r}
 fore_CQR <- VaR_forecasting_CQR(data = Y,N_train = N_window,N_val = N_val,H = H,fixTau = fixTau) #  rolling forecasting based on CQR
 
-# Summary the forecasting results
+# Summarize the forecasting results
 report <- matrix(NA,nrow = 2,ncol = length(fixTau))
 real <- Y[(N_window+N_val+1):(N_window+N_val+N_predict)]
 for(tau_index in 1:length(fixTau)){
