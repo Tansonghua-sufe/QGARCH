@@ -1,7 +1,7 @@
 ---
 title: <font face="times">R programs for "Quantile autoregressive conditional heteroscedasticity"</font>
 author:  <p align="right"><font face="times">Songhua Tan</font></p>
-subtitle:  <p align="right"><font face="times">2022/10/01</font></p>
+subtitle:  <p align="right"><font face="times">2023/01/10</font></p>
 output: 
   html_document: 
     number_sections: yes
@@ -217,8 +217,8 @@ par(mfrow = c(1,1))
 ## CvM test for constant persistence coefficient
 
 ```{r message=FALSE, warning=FALSE}
-# Interval 1: [0.7,0.99]
-testTau1 <- 141:198/200
+# Interval 1: [0.700,0.850]
+testTau1 <- 140:170/200
 K <- length(testTau1)
 N <- length(Y)
 
@@ -241,8 +241,8 @@ subsampling_cons_test[['information']]
 ```
 
 ```{r message=FALSE, warning=FALSE}
-# Interval 2: [0.85,0.95]
-testTau2 <- 171:190/200
+# Interval 2: [0.850, 0.950]
+testTau2 <- 170:190/200
 K <- length(testTau2)
 N <- length(Y)
 
@@ -261,6 +261,78 @@ for(tau_index in 1:length(testTau2)){
   Omega_1_multi[tau_index,,] <- Cov$Omega_1
 }
 subsampling_cons_test <- const_test(Y,w,testTau2,parm_multi,Omega_1_multi) # CvM test
+subsampling_cons_test[['information']]
+```
+
+```{r message=FALSE, warning=FALSE}
+# Interval 3: [0.950, 0.980]
+testTau3 <- 190:196/200
+K <- length(testTau3)
+N <- length(Y)
+
+# Obtain estimates of parameters and Omega_{1w} at multiple quantile levels
+parm_multi <- array(NA,dim = c(K,3))
+Omega_1_multi <- array(NA,dim = c(K,3,3))
+
+for(tau_index in 1:length(testTau3)){
+  tau <- testTau3[tau_index]
+
+  result_QR <- fit1_optim(Y = Y,w = w,tau = tau)
+  parm <- result_QR$par
+  Cov <- ASD_QR(parm = parm,Y = Y,w = w,tau = tau,h_type = "HS")
+  
+  parm_multi[tau_index,] <- parm
+  Omega_1_multi[tau_index,,] <- Cov$Omega_1
+}
+subsampling_cons_test <- const_test(Y,w,testTau3,parm_multi,Omega_1_multi) # CvM test
+subsampling_cons_test[['information']]
+```
+
+```{r message=FALSE, warning=FALSE}
+# Interval 4: [0.980, 0.995]
+testTau4 <- 196:199/200
+K <- length(testTau4)
+N <- length(Y)
+
+# Obtain estimates of parameters and Omega_{1w} at multiple quantile levels
+parm_multi <- array(NA,dim = c(K,3))
+Omega_1_multi <- array(NA,dim = c(K,3,3))
+
+for(tau_index in 1:length(testTau4)){
+  tau <- testTau4[tau_index]
+
+  result_QR <- fit1_optim(Y = Y,w = w,tau = tau)
+  parm <- result_QR$par
+  Cov <- ASD_QR(parm = parm,Y = Y,w = w,tau = tau,h_type = "HS")
+  
+  parm_multi[tau_index,] <- parm
+  Omega_1_multi[tau_index,,] <- Cov$Omega_1
+}
+subsampling_cons_test <- const_test(Y,w,testTau4,parm_multi,Omega_1_multi) # CvM test
+subsampling_cons_test[['information']]
+```
+
+```{r message=FALSE, warning=FALSE}
+# Interval 5: [0.700, 0.995]
+testTau5 <- 140:199/200
+K <- length(testTau5)
+N <- length(Y)
+
+# Obtain estimates of parameters and Omega_{1w} at multiple quantile levels
+parm_multi <- array(NA,dim = c(K,3))
+Omega_1_multi <- array(NA,dim = c(K,3,3))
+
+for(tau_index in 1:length(testTau5)){
+  tau <- testTau5[tau_index]
+
+  result_QR <- fit1_optim(Y = Y,w = w,tau = tau)
+  parm <- result_QR$par
+  Cov <- ASD_QR(parm = parm,Y = Y,w = w,tau = tau,h_type = "HS")
+  
+  parm_multi[tau_index,] <- parm
+  Omega_1_multi[tau_index,,] <- Cov$Omega_1
+}
+subsampling_cons_test <- const_test(Y,w,testTau5,parm_multi,Omega_1_multi) # CvM test
 subsampling_cons_test[['information']]
 ```
 
@@ -308,7 +380,7 @@ VaRbacktestB <- function(Hit,VaR,tau,p,Y_true){
     DQ <- t(Hit[(p+1):n]-tau)%*%X%*%solve(t(X)%*%X)%*%t(X)%*%(Hit[(p+1):n]-tau)/tau/(1-tau)
     P.DQ <- pchisq(DQ,df=p+1,lower.tail=FALSE) # p-value
   }
-  
+
   ECR <- mean(Hit)*100
   PE <- sqrt(n)*abs(mean(Hit)-tau)/sqrt(tau*(1-tau))
   Loss <- mean(check_function(x = (Y_true-(-VaR)),tau = tau))

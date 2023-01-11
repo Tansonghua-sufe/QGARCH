@@ -388,7 +388,7 @@ pre code {
 <h1 class="title toc-ignore"><font face="times">R programs for “Quantile
 autoregressive conditional heteroscedasticity”</font></h1>
 <h3 class="subtitle"><p align="right">
-<font face="times">2022/10/01</font>
+<font face="times">2023/01/10</font>
 </p></h3>
 <h4 class="author"><p align="right">
 <font face="times">Songhua Tan</font>
@@ -623,8 +623,8 @@ lines(x=fixTau,y=parm_ARCHinfty[,index_parm],col = &quot;red&quot;,lty=1)</code>
 <div id="cvm-test-for-constant-persistence-coefficient" class="section level2" number="2.4">
 <h2><span class="header-section-number">2.4</span> CvM test for constant
 persistence coefficient</h2>
-<pre class="r"><code># Interval 1: [0.7,0.99]
-testTau1 &lt;- 141:198/200
+<pre class="r"><code># Interval 1: [0.700,0.850]
+testTau1 &lt;- 140:170/200
 K &lt;- length(testTau1)
 N &lt;- length(Y)
 
@@ -644,9 +644,9 @@ for(tau_index in 1:length(testTau1)){
 }
 subsampling_cons_test &lt;- const_test(Y,w,testTau1,parm_multi,Omega_1_multi) # CvM test
 subsampling_cons_test[[&#39;information&#39;]]</code></pre>
-<pre><code>[1] &quot;The value of CvM test statistic is 1.003;The p value is 0.143.&quot;</code></pre>
-<pre class="r"><code># Interval 2: [0.85,0.95]
-testTau2 &lt;- 171:190/200
+<pre><code>[1] &quot;The value of CvM test statistic is 0.129;The p value is 0.585.&quot;</code></pre>
+<pre class="r"><code># Interval 2: [0.850, 0.950]
+testTau2 &lt;- 170:190/200
 K &lt;- length(testTau2)
 N &lt;- length(Y)
 
@@ -666,7 +666,73 @@ for(tau_index in 1:length(testTau2)){
 }
 subsampling_cons_test &lt;- const_test(Y,w,testTau2,parm_multi,Omega_1_multi) # CvM test
 subsampling_cons_test[[&#39;information&#39;]]</code></pre>
-<pre><code>[1] &quot;The value of CvM test statistic is 0.933;The p value is 0.047.&quot;</code></pre>
+<pre><code>[1] &quot;The value of CvM test statistic is 0.926;The p value is 0.054.&quot;</code></pre>
+<pre class="r"><code># Interval 3: [0.950, 0.980]
+testTau3 &lt;- 190:196/200
+K &lt;- length(testTau3)
+N &lt;- length(Y)
+
+# Obtain estimates of parameters and Omega_{1w} at multiple quantile levels
+parm_multi &lt;- array(NA,dim = c(K,3))
+Omega_1_multi &lt;- array(NA,dim = c(K,3,3))
+
+for(tau_index in 1:length(testTau3)){
+  tau &lt;- testTau3[tau_index]
+
+  result_QR &lt;- fit1_optim(Y = Y,w = w,tau = tau)
+  parm &lt;- result_QR$par
+  Cov &lt;- ASD_QR(parm = parm,Y = Y,w = w,tau = tau,h_type = &quot;HS&quot;)
+  
+  parm_multi[tau_index,] &lt;- parm
+  Omega_1_multi[tau_index,,] &lt;- Cov$Omega_1
+}
+subsampling_cons_test &lt;- const_test(Y,w,testTau3,parm_multi,Omega_1_multi) # CvM test
+subsampling_cons_test[[&#39;information&#39;]]</code></pre>
+<pre><code>[1] &quot;The value of CvM test statistic is 0.101;The p value is 0.555.&quot;</code></pre>
+<pre class="r"><code># Interval 4: [0.980, 0.995]
+testTau4 &lt;- 196:199/200
+K &lt;- length(testTau4)
+N &lt;- length(Y)
+
+# Obtain estimates of parameters and Omega_{1w} at multiple quantile levels
+parm_multi &lt;- array(NA,dim = c(K,3))
+Omega_1_multi &lt;- array(NA,dim = c(K,3,3))
+
+for(tau_index in 1:length(testTau4)){
+  tau &lt;- testTau4[tau_index]
+
+  result_QR &lt;- fit1_optim(Y = Y,w = w,tau = tau)
+  parm &lt;- result_QR$par
+  Cov &lt;- ASD_QR(parm = parm,Y = Y,w = w,tau = tau,h_type = &quot;HS&quot;)
+  
+  parm_multi[tau_index,] &lt;- parm
+  Omega_1_multi[tau_index,,] &lt;- Cov$Omega_1
+}
+subsampling_cons_test &lt;- const_test(Y,w,testTau4,parm_multi,Omega_1_multi) # CvM test
+subsampling_cons_test[[&#39;information&#39;]]</code></pre>
+<pre><code>[1] &quot;The value of CvM test statistic is 1.152;The p value is 0.017.&quot;</code></pre>
+<pre class="r"><code># Interval 5: [0.700, 0.995]
+testTau5 &lt;- 140:199/200
+K &lt;- length(testTau5)
+N &lt;- length(Y)
+
+# Obtain estimates of parameters and Omega_{1w} at multiple quantile levels
+parm_multi &lt;- array(NA,dim = c(K,3))
+Omega_1_multi &lt;- array(NA,dim = c(K,3,3))
+
+for(tau_index in 1:length(testTau5)){
+  tau &lt;- testTau5[tau_index]
+
+  result_QR &lt;- fit1_optim(Y = Y,w = w,tau = tau)
+  parm &lt;- result_QR$par
+  Cov &lt;- ASD_QR(parm = parm,Y = Y,w = w,tau = tau,h_type = &quot;HS&quot;)
+  
+  parm_multi[tau_index,] &lt;- parm
+  Omega_1_multi[tau_index,,] &lt;- Cov$Omega_1
+}
+subsampling_cons_test &lt;- const_test(Y,w,testTau5,parm_multi,Omega_1_multi) # CvM test
+subsampling_cons_test[[&#39;information&#39;]]</code></pre>
+<pre><code>[1] &quot;The value of CvM test statistic is 0.994;The p value is 0.15.&quot;</code></pre>
 </div>
 <div id="forecasting" class="section level2" number="2.5">
 <h2><span class="header-section-number">2.5</span> Forecasting</h2>
@@ -711,7 +777,7 @@ Backtesting function</h3>
     DQ &lt;- t(Hit[(p+1):n]-tau)%*%X%*%solve(t(X)%*%X)%*%t(X)%*%(Hit[(p+1):n]-tau)/tau/(1-tau)
     P.DQ &lt;- pchisq(DQ,df=p+1,lower.tail=FALSE) # p-value
   }
-  
+
   ECR &lt;- mean(Hit)*100
   PE &lt;- sqrt(n)*abs(mean(Hit)-tau)/sqrt(tau*(1-tau))
   Loss &lt;- mean(check_function(x = (Y_true-(-VaR)),tau = tau))
